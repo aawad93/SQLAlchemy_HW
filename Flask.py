@@ -1,10 +1,11 @@
+# Dependencies
 import sqlalchemy
 import pandas as pd
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
-import datetime as dt
-from flask import Flask, jsonify
+
+from flask import Flask, jsonify, send_file
 
 
 
@@ -55,15 +56,15 @@ def percipitation():
    # Query 
     conn = engine.connect()
     prcp_df = pd.read_sql("SELECT date, prcp FROM measurement WHERE date BETWEEN '2016-08-23' AND '2017-08-23'", conn).set_index('date').sort_index(axis=0)
-
+    # Convert Data Frame to HTML
     prcp_html= prcp_df.to_html()
-
-    return (prcp_html)
+    
+    return (prcp_html) 
 
 @app.route("/api/v1.0/stations")
 def stations():
     """all stations"""
-    # Query all stations
+    # Query
     session = Session(engine)
     stations = session.query(Station.station).all()
 
@@ -72,11 +73,11 @@ def stations():
 @app.route("/api/v1.0/tobs")
 def tobs():
     """the last 12 months of temperatures recorded"""
-    # Query tobs data
+    # Query
     session = Session(engine)
     tobs = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date >= '2016-08-18')
     
-  # Create a dictionary from the row data and append to a list of all_passengers
+  # Create a dictionary from the row data and append to a list
     tobs_data = []
     for date, t in tobs:
         tobs_dict = {}
@@ -89,17 +90,21 @@ def tobs():
 @app.route("/api/v1.0/start=<start_date>")
 def start_date_query(start_date):
     """Fetch the temperature data from start date"""
+    #Query
     conn = engine.connect()
-    tobs_start_df = pd.read_sql_query(f"SELECT MIN(tobs), MAX(tobs), AVG(tobs) FROM measurement WHERE date >={start_date}", conn)
-    tobs_start_html = tobs_start_df.to_html()
+    tobs_start_df = pd.read_sql_query(f"SELECT MIN(tobs), MAX(tobs), AVG(tobs) FROM measurement WHERE date >='{start_date}'", conn)
+    # Convert Data Frame to JSON
+    tobs_start_json = tobs_start_df.to_json()
 
-    return (tobs_start_html)
+    return jsonify(tobs_start_json)
 
 @app.route("/api/v1.0/end=<end_date>")
 def end_date_query(end_date):
     """Fetch the temperature data from end date"""
+    # Query
     conn = engine.connect()
-    tobs_end_df = pd.read_sql_query(f"SELECT MIN(tobs), MAX(tobs), AVG(tobs) FROM measurement WHERE date <={end_date}", conn)
+    tobs_end_df = pd.read_sql_query(f"SELECT MIN(tobs), MAX(tobs), AVG(tobs) FROM measurement WHERE date <='{end_date}'", conn)
+    # Convert Data Frame to HTML
     tobs_end_html = tobs_end_df.to_html()
 
     return (tobs_end_html)
@@ -107,8 +112,10 @@ def end_date_query(end_date):
 @app.route("/api/v1.0/start=<start_date>/end=<end_date>")
 def start_end_query(start_date, end_date):
     """Fetch the temperature data from start and end date"""
+    # Query
     conn = engine.connect()
-    tobs_cust_df = pd.read_sql_query(f"SELECT MIN(tobs), MAX(tobs), AVG(tobs) FROM measurement WHERE date BETWEEN {start_date} AND {end_date}", conn)
+    tobs_cust_df = pd.read_sql_query(f"SELECT MIN(tobs), MAX(tobs), AVG(tobs) FROM measurement WHERE date BETWEEN '{start_date}' AND '{end_date}'", conn)
+    # Convert Data Frame to HTML
     tobs_cust_html = tobs_cust_df.to_html()
 
     return (tobs_cust_html)
